@@ -7,9 +7,13 @@ services:
       LISTEN_ADDR: ":8080"
       DB_PATH: "/data/secchat.db"
     ports:
-      # Nur lokal gebunden — der Tor-Sidecar erreicht das Backend
-      # ueber das Compose-Netzwerk (backend:8080).
-      - "127.0.0.1:8080:8080"
+      # TEMPORAER im Clearnet gebunden, damit der Android-Emulator
+      # waehrend der Entwicklung direkt auf http://178.104.184.58:8080
+      # zugreifen kann — ohne Tor-Client auf dem Geraet. Phase 3c
+      # (embedded Arti im nativen Rust-Modul) stellt das auf
+      # "127.0.0.1:8080:8080" zurueck, sodass der Backend-Port nur
+      # noch vom Tor-Sidecar ueber das Compose-Netzwerk ansprechbar ist.
+      - "8080:8080"
     volumes:
       - backend-data:/data
 
