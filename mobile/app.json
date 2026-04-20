@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "secchat",
+    "slug": "secchat",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "com.secchat.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.secchat.app"
+    },
+    "plugins": [
+      "expo-dev-client",
+      "expo-secure-store"
+    ]
+  }
+}

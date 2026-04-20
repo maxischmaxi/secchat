@@ -4,9 +4,8 @@ Monorepo für eine über das Tor-Netzwerk laufende Chat-App.
 
 ## Struktur
 
-- `backend/` — Go HTTP-Service, als Docker-Image ausgeliefert
-- `web/` — Next.js Web-Client (Platzhalter)
-- `mobile/` — React Native App (Platzhalter)
+- `backend/` — Go Ciphertext-Router + KeyPackage-Server (MLS)
+- `mobile/` — React Native/Expo App, trägt die MLS-Clients
 - `deploy/` — `docker-compose.yml` und `.env.example` für den Hetzner-Host
 - `scripts/` — einmalige Setup-Skripte für den Server
 - `.github/workflows/` — CI/CD
