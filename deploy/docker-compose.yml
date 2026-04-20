@@ -5,10 +5,13 @@ services:
     restart: unless-stopped
     environment:
       LISTEN_ADDR: ":8080"
+      DB_PATH: "/data/secchat.db"
     ports:
       # Nur lokal gebunden — der Tor-Sidecar erreicht das Backend
       # ueber das Compose-Netzwerk (backend:8080).
       - "127.0.0.1:8080:8080"
+    volumes:
+      - backend-data:/data
 
   tor:
     build: ./tor
@@ -21,4 +24,5 @@ services:
       - tor-data:/var/lib/tor
 
 volumes:
+  backend-data:
   tor-data:
