@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 
 import { ChatScreen } from '@/screens/ChatScreen';
 import { HomeScreen } from '@/screens/HomeScreen';
+import { LoadingScreen } from '@/screens/LoadingScreen';
 import { SeedConfirmScreen } from '@/screens/SeedConfirmScreen';
 import { SeedDisplayScreen } from '@/screens/SeedDisplayScreen';
 import { WelcomeScreen } from '@/screens/WelcomeScreen';
@@ -28,14 +29,21 @@ export function RootNavigator() {
 
   useEffect(() => {
     (async () => {
-      const h = await loadHandle();
-      const t = await loadSessionToken();
-      if (h && t) setSession(h, t);
-      markReady();
+      try {
+        const h = await loadHandle();
+        const t = await loadSessionToken();
+        if (h && t) setSession(h, t);
+      } catch (e) {
+        // Fehler nicht silent verschlucken — sonst weisser Screen, wenn
+        // SecureStore auf dem Emulator/Device z.B. keinen Keystore hat.
+        console.warn('[secchat] auth bootstrap failed:', e);
+      } finally {
+        markReady();
+      }
     })();
   }, [markReady, setSession]);
 
-  if (!ready) return null;
+  if (!ready) return <LoadingScreen />;
 
   const authed = Boolean(handle && token);
 
