@@ -1,0 +1,41 @@
+# Go
+backend/bin/
+*.exe
+*.test
+*.out
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.turbo/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# React Native / Expo
+.expo/
+ios/build/
+android/build/
+android/app/build/
+android/.gradle/
+*.jks
+*.keystore
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+deploy_key
+deploy_key.pub
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
