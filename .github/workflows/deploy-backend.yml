@@ -66,14 +66,15 @@ jobs:
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
 
-      - name: Sync compose file
+      - name: Sync deploy files
         run: |
           ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
             "mkdir -p '$DEPLOY_DIR'"
-          scp -i ~/.ssh/id_deploy deploy/docker-compose.yml \
-            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/docker-compose.yml"
+          scp -i ~/.ssh/id_deploy -r \
+            deploy/docker-compose.yml deploy/tor \
+            "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/"
 
-      - name: Pull & restart backend
+      - name: Pull, build & restart stack
         env:
           IMAGE_REF: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:sha-${{ github.sha }}
           GHCR_USER: ${{ github.actor }}
@@ -86,7 +87,27 @@ jobs:
           printf 'BACKEND_IMAGE=%s\n' "$BACKEND_IMAGE" > .env
           printf '%s\n' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
           docker compose pull
-          docker compose up -d --remove-orphans
+          docker compose up -d --build --remove-orphans
           docker image prune -f
           docker logout ghcr.io
+          REMOTE
+
+      - name: Wait for tor hidden service
+        run: |
+          ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
+          set -e
+          cd /opt/secchat
+          for i in $(seq 1 20); do
+            if docker compose exec -T tor test -s /var/lib/tor/secchat/hostname 2>/dev/null; then
+              echo "tor hidden service is up"
+              echo "retrieve .onion via:"
+              echo "  ssh root@178.104.184.58 'docker compose -f /opt/secchat/docker-compose.yml exec -T tor cat /var/lib/tor/secchat/hostname'"
+              exit 0
+            fi
+            echo "[$i/20] waiting for tor hidden service..."
+            sleep 3
+          done
+          echo "hidden service did not come up in time"
+          docker compose logs --tail 80 tor
+          exit 1
           REMOTE

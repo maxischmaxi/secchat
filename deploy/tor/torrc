@@ -1,0 +1,11 @@
+# secchat Tor-Hidden-Service
+# Nur eingehender Hidden Service — kein SOCKS-Proxy, kein Control-Port.
+
+Log notice stdout
+DataDirectory /var/lib/tor
+SocksPort 0
+ControlPort 0
+
+HiddenServiceDir /var/lib/tor/secchat/
+HiddenServicePort 80 backend:8080
+HiddenServiceVersion 3

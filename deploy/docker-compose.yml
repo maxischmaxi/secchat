@@ -6,18 +6,19 @@ services:
     environment:
       LISTEN_ADDR: ":8080"
     ports:
-      # Nur lokal exponiert — Tor-Hidden-Service greift später über das
-      # Compose-Netzwerk bzw. 127.0.0.1 zu.
+      # Nur lokal gebunden — der Tor-Sidecar erreicht das Backend
+      # ueber das Compose-Netzwerk (backend:8080).
       - "127.0.0.1:8080:8080"
 
-# Tor-Hidden-Service (Platzhalter für späteren Schritt):
-#
-#  tor:
-#    image: osminogin/tor-simple:latest
-#    restart: unless-stopped
-#    volumes:
-#      - ./tor/torrc:/etc/tor/torrc:ro
-#      - tor-data:/var/lib/tor
-#
-# volumes:
-#   tor-data:
+  tor:
+    build: ./tor
+    container_name: secchat-tor
+    restart: unless-stopped
+    depends_on:
+      - backend
+    volumes:
+      - ./tor/torrc:/etc/tor/torrc:ro
+      - tor-data:/var/lib/tor
+
+volumes:
+  tor-data:
