@@ -4,17 +4,25 @@ import { useEffect } from 'react';
 import { ChatScreen } from '@/screens/ChatScreen';
 import { HomeScreen } from '@/screens/HomeScreen';
 import { LoadingScreen } from '@/screens/LoadingScreen';
+import { NewChatScreen } from '@/screens/NewChatScreen';
 import { SeedConfirmScreen } from '@/screens/SeedConfirmScreen';
 import { SeedDisplayScreen } from '@/screens/SeedDisplayScreen';
 import { WelcomeScreen } from '@/screens/WelcomeScreen';
 import { useAuth } from '@/state/auth';
-import { loadHandle, loadSessionToken } from '@/storage/keystore';
+import { useConversations } from '@/state/conversations';
+import { startInboxLoop, stopInboxLoop } from '@/state/inbox';
+import {
+  loadHandle,
+  loadSeed,
+  loadSessionToken,
+} from '@/storage/keystore';
 
 export type RootStackParamList = {
   Welcome: undefined;
   SeedDisplay: { mnemonic: string; handle: string };
   SeedConfirm: { mnemonic: string };
   Home: undefined;
+  NewChat: undefined;
   Chat: { groupId: string };
 };
 
@@ -23,25 +31,39 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 export function RootNavigator() {
   const handle = useAuth((s) => s.handle);
   const token = useAuth((s) => s.token);
+  const x25519Priv = useAuth((s) => s.x25519Priv);
   const ready = useAuth((s) => s.ready);
   const setSession = useAuth((s) => s.setSession);
   const markReady = useAuth((s) => s.markReady);
+  const reloadConversations = useConversations((s) => s.reload);
 
+  // Rehydriere Session aus SecureStore beim App-Start
   useEffect(() => {
     (async () => {
       try {
-        const h = await loadHandle();
-        const t = await loadSessionToken();
-        if (h && t) setSession(h, t);
+        const [h, t, mnemonic] = await Promise.all([
+          loadHandle(),
+          loadSessionToken(),
+          loadSeed(),
+        ]);
+        if (h && t && mnemonic) setSession(h, t, mnemonic);
       } catch (e) {
-        // Fehler nicht silent verschlucken — sonst weisser Screen, wenn
-        // SecureStore auf dem Emulator/Device z.B. keinen Keystore hat.
         console.warn('[secchat] auth bootstrap failed:', e);
       } finally {
         markReady();
       }
     })();
   }, [markReady, setSession]);
+
+  // Inbox-Loop + Conversations laden solange authed
+  useEffect(() => {
+    if (!token || !x25519Priv) return;
+    reloadConversations();
+    startInboxLoop(token, x25519Priv);
+    return () => {
+      stopInboxLoop();
+    };
+  }, [token, x25519Priv, reloadConversations]);
 
   if (!ready) return <LoadingScreen />;
 
@@ -62,6 +84,11 @@ export function RootNavigator() {
             name="Home"
             component={HomeScreen}
             options={{ title: 'secchat' }}
+          />
+          <Stack.Screen
+            name="NewChat"
+            component={NewChatScreen}
+            options={{ title: 'Neuer Chat' }}
           />
           <Stack.Screen
             name="Chat"

@@ -14,10 +14,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { fromBase64 } from '@/api/client';
+import { uploadKeyPackages } from '@/api/keypackages';
 import { getChallenge, verifyChallenge } from '@/api/users';
+import { makeKeyPackage } from '@/crypto/keypackage';
 import { deriveHandle } from '@/crypto/handle';
 import { deriveIdentity, sign } from '@/crypto/identity';
 import { seedFromMnemonic } from '@/crypto/seed';
+import { deriveX25519 } from '@/crypto/x25519';
 import type { RootStackParamList } from '@/navigation/RootNavigator';
 import { useAuth } from '@/state/auth';
 import { saveHandle, saveSeed, saveSessionToken } from '@/storage/keystore';
@@ -30,10 +33,10 @@ function pickIndices(total: number, count: number): number[] {
   return [...idxs].sort((a, b) => a - b);
 }
 
-// Robust normalisieren — deckt Unicode-Normalisierung (NFKC), evtl.
-// eingeschleuste Non-Breaking-Spaces und Grossbuchstaben ab.
 const normalize = (s: string): string =>
   s.normalize('NFKC').trim().toLowerCase();
+
+const KEYPACKAGE_BATCH = 10;
 
 export function SeedConfirmScreen({ route }: Props) {
   const { mnemonic } = route.params;
@@ -62,18 +65,26 @@ export function SeedConfirmScreen({ route }: Props) {
     setLoading(true);
     try {
       const entropy = seedFromMnemonic(mnemonic);
-      const { privateKey, publicKey } = deriveIdentity(entropy);
-      const handle = deriveHandle(publicKey);
+      const ident = deriveIdentity(entropy);
+      const x = deriveX25519(entropy);
+      const handle = deriveHandle(ident.publicKey);
 
+      // 1) Auth — Challenge-Response
       const { nonce: nonceB64 } = await getChallenge(handle);
       const nonceBytes = fromBase64(nonceB64);
-      const sig = sign(privateKey, nonceBytes);
+      const sig = sign(ident.privateKey, nonceBytes);
       const { token } = await verifyChallenge(handle, nonceB64, sig);
 
+      // 2) KeyPackages hochladen, damit uns jemand einladen kann
+      const kp = makeKeyPackage(ident.privateKey, ident.publicKey, x.publicKey);
+      const batch = new Array(KEYPACKAGE_BATCH).fill(kp);
+      await uploadKeyPackages(token, batch);
+
+      // 3) Local persist + activate auth
       await saveSeed(mnemonic);
       await saveHandle(handle);
       await saveSessionToken(token);
-      setSession(handle, token);
+      setSession(handle, token, mnemonic);
     } catch (e) {
       Alert.alert('Fehler', String(e));
     } finally {
@@ -93,9 +104,8 @@ export function SeedConfirmScreen({ route }: Props) {
         >
           <Text style={styles.title}>Bitte bestätigen</Text>
           <Text style={styles.subtitle}>
-            Trag die folgenden Wörter aus deinem Seed ein, um zu zeigen dass
-            du ihn gesichert hast. Das Feld wird grün, sobald das Wort
-            übereinstimmt.
+            Trag die folgenden Wörter aus deinem Seed ein. Feld wird grün,
+            sobald das Wort übereinstimmt.
           </Text>
 
           {prompts.map((i) => {
@@ -120,9 +130,7 @@ export function SeedConfirmScreen({ route }: Props) {
                   placeholder="…"
                   placeholderTextColor="#444"
                   value={value}
-                  onChangeText={(t) =>
-                    setInputs((p) => ({ ...p, [i]: t }))
-                  }
+                  onChangeText={(t) => setInputs((p) => ({ ...p, [i]: t }))}
                 />
                 {hasInput ? (
                   <Text style={ok ? styles.markOk : styles.markBad}>
@@ -136,15 +144,12 @@ export function SeedConfirmScreen({ route }: Props) {
           })}
 
           <Pressable
-            style={[
-              styles.primary,
-              (!allMatch || loading) && styles.disabled,
-            ]}
+            style={[styles.primary, (!allMatch || loading) && styles.disabled]}
             disabled={!allMatch || loading}
             onPress={finish}
           >
             <Text style={styles.primaryText}>
-              {loading ? 'Verifiziere…' : 'Fertig'}
+              {loading ? 'Verifiziere + Upload…' : 'Fertig'}
             </Text>
           </Pressable>
         </ScrollView>
@@ -172,8 +177,20 @@ const styles = StyleSheet.create({
   },
   inputOk: { borderColor: '#3dfd8b' },
   inputBad: { borderColor: '#ff5d5d' },
-  markOk: { color: '#3dfd8b', fontSize: 20, marginLeft: 10, width: 20, textAlign: 'center' },
-  markBad: { color: '#ff5d5d', fontSize: 20, marginLeft: 10, width: 20, textAlign: 'center' },
+  markOk: {
+    color: '#3dfd8b',
+    fontSize: 20,
+    marginLeft: 10,
+    width: 20,
+    textAlign: 'center',
+  },
+  markBad: {
+    color: '#ff5d5d',
+    fontSize: 20,
+    marginLeft: 10,
+    width: 20,
+    textAlign: 'center',
+  },
   markSpacer: { width: 30 },
   primary: {
     backgroundColor: '#3d8bfd',
