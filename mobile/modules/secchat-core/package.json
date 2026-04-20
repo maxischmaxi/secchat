@@ -1,0 +1,13 @@
+{
+  "name": "secchat-core",
+  "version": "0.1.0",
+  "description": "Native MLS + Tor module for secchat — UniFFI-generated bindings around the secchat-core Rust crate.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react-native": "*"
+  }
+}

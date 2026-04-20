@@ -9,8 +9,14 @@ description = "Native Rust core for secchat: MLS (openmls) + embedded Tor (arti)
 [lib]
 crate-type = ["staticlib", "cdylib", "lib"]
 
+[[bin]]
+# Generates Kotlin/Swift bindings from the compiled library.
+# Used by build.sh; not shipped.
+name = "uniffi-bindgen"
+path = "src/bin/uniffi-bindgen.rs"
+
 [dependencies]
-uniffi = { version = "0.28", features = ["tokio"] }
+uniffi = { version = "0.28", features = ["tokio", "cli"] }
 thiserror = "1"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
 hkdf = "0.12"

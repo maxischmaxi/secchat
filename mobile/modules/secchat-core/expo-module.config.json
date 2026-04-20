@@ -1,0 +1,9 @@
+{
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["SecchatCoreModule"]
+  },
+  "android": {
+    "modules": ["com.secchat.core.SecchatCoreModule"]
+  }
+}

@@ -3,11 +3,12 @@ node_modules/
 dist/
 web-build/
 
-# Expo Continuous Native Generation — native projects are regenerated
-# via `npx expo prebuild`, not committed. Add custom native code through
-# config plugins instead.
-ios/
-android/
+# Expo Continuous Native Generation — native projects at the mobile/
+# root are regenerated via `npx expo prebuild`, not committed. The
+# leading slash anchors the pattern so modules/*/ios and modules/*/android
+# (where our Expo-Modul-Wrapper lives) bleiben tracked.
+/ios/
+/android/
 
 npm-debug.*
 yarn-debug.*

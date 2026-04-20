@@ -1,0 +1,35 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+group = 'com.secchat.core'
+version = '0.1.0'
+
+android {
+  namespace 'com.secchat.core'
+  compileSdkVersion rootProject.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
+
+  defaultConfig {
+    minSdkVersion rootProject.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
+    targetSdkVersion rootProject.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 34
+  }
+
+  sourceSets {
+    main {
+      java.srcDirs = ['src/main/java']
+      // libsecchat_core.so pro ABI; wird von build.sh via cargo-ndk angelegt.
+      jniLibs.srcDirs = ['src/main/jniLibs']
+      manifest.srcFile 'src/main/AndroidManifest.xml'
+    }
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+}
+
+dependencies {
+  implementation project(':expo-modules-core')
+  implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.0'
+  // UniFFI-Kotlin verwendet JNA als FFI-Bruecke zur Rust-lib.
+  implementation 'net.java.dev.jna:jna:5.14.0@aar'
+}
