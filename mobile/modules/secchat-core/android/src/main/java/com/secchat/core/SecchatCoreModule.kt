@@ -3,105 +3,54 @@ package com.secchat.core
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
-// UniFFI-generierte Bindings (durch build.sh unter android/src/main/java/uniffi/secchat_core/)
-import uniffi.secchat_core.MlsClient
-import uniffi.secchat_core.MlsGroupHandle as UMlsGroupHandle
-import uniffi.secchat_core.TorClient
-import uniffi.secchat_core.deriveHandle as uniffiDeriveHandle
-import uniffi.secchat_core.deriveIdentityPrivateKey as uniffiDerivePrivKey
-
+/**
+ * Phase-3b-Stub. Die echten UniFFI-Kotlin-Bindings leben unter
+ * `android/src/main/java/uniffi/secchat_core/` und werden von
+ * `native/secchat-core/build.sh` erzeugt. Solange die noch nicht
+ * da sind, wirft jeder Aufruf einen klaren Fehler — so bleibt die
+ * Kompilierung gruen, JS-seitige Use-Versuche schlagen aber laut
+ * fehl statt still falsche Werte zu liefern.
+ *
+ * Phase 3c ersetzt diesen Stub durch den echten Wrapper, der
+ * `uniffi.secchat_core.MlsClient`/`TorClient`/... anruft.
+ */
 class SecchatCoreModule : Module() {
-  private var mlsClient: MlsClient? = null
-  private var torClient: TorClient? = null
-
-  private fun mls(): MlsClient =
-    mlsClient ?: throw IllegalStateException("MLS not initialized — call initMls first")
-
-  private fun tor(): TorClient =
-    torClient ?: throw IllegalStateException("Tor not initialized — call torInit first")
-
-  private fun groupFromMap(m: Map<String, Any?>): UMlsGroupHandle =
-    UMlsGroupHandle(
-      groupId = m["groupId"] as String,
-      epoch = (m["epoch"] as Number).toLong().toULong(),
-    )
-
-  private fun groupToMap(h: UMlsGroupHandle): Map<String, Any> =
-    mapOf("groupId" to h.groupId, "epoch" to h.epoch.toLong())
+  private fun <T> notReady(): T = throw IllegalStateException(
+    "secchat-core native bindings not generated yet — " +
+      "run native/secchat-core/build.sh first."
+  )
 
   override fun definition() = ModuleDefinition {
     Name("SecchatCore")
 
-    // --- identity ---
+    // identity
+    Function("deriveHandle") { _: ByteArray -> notReady<String>() }
+    Function("deriveIdentityPrivateKey") { _: ByteArray -> notReady<ByteArray>() }
 
-    Function("deriveHandle") { pubkey: ByteArray ->
-      uniffiDeriveHandle(pubkey)
+    // MLS
+    Function("initMls") { _: ByteArray -> notReady<Unit>() }
+    AsyncFunction("generateKeyPackages") { _: Int -> notReady<List<ByteArray>>() }
+    AsyncFunction("createGroup") { _: String -> notReady<Map<String, Any>>() }
+    AsyncFunction("inviteMembers") {
+      _: Map<String, Any?>, _: List<ByteArray> -> notReady<Map<String, Any>>()
+    }
+    AsyncFunction("processWelcome") { _: ByteArray -> notReady<Map<String, Any>>() }
+    AsyncFunction("processCommit") {
+      _: Map<String, Any?>, _: ByteArray -> notReady<Map<String, Any>>()
+    }
+    AsyncFunction("encryptMessage") {
+      _: Map<String, Any?>, _: ByteArray -> notReady<ByteArray>()
+    }
+    AsyncFunction("decryptMessage") {
+      _: Map<String, Any?>, _: ByteArray -> notReady<ByteArray>()
     }
 
-    Function("deriveIdentityPrivateKey") { seed: ByteArray ->
-      uniffiDerivePrivKey(seed)
-    }
-
-    // --- MLS ---
-
-    Function("initMls") { identityPriv: ByteArray ->
-      mlsClient = MlsClient(identityPriv)
-    }
-
-    AsyncFunction("generateKeyPackages") { count: Int ->
-      mls().generateKeyPackages(count.toUInt()).map { it.publicBlob }
-    }
-
-    AsyncFunction("createGroup") { groupId: String ->
-      groupToMap(mls().createGroup(groupId))
-    }
-
-    AsyncFunction("inviteMembers") { group: Map<String, Any?>, keyPackages: List<ByteArray> ->
-      val out = mls().inviteMembers(groupFromMap(group), keyPackages)
-      mapOf(
-        "commit" to out.commit,
-        "welcomes" to out.welcomes,
-      )
-    }
-
-    AsyncFunction("processWelcome") { welcomeBlob: ByteArray ->
-      groupToMap(mls().processWelcome(welcomeBlob))
-    }
-
-    AsyncFunction("processCommit") { group: Map<String, Any?>, commitBlob: ByteArray ->
-      groupToMap(mls().processCommit(groupFromMap(group), commitBlob))
-    }
-
-    AsyncFunction("encryptMessage") { group: Map<String, Any?>, plaintext: ByteArray ->
-      mls().encryptMessage(groupFromMap(group), plaintext)
-    }
-
-    AsyncFunction("decryptMessage") { group: Map<String, Any?>, ciphertext: ByteArray ->
-      mls().decryptMessage(groupFromMap(group), ciphertext)
-    }
-
-    // --- Tor ---
-
-    Function("torInit") {
-      torClient = TorClient()
-    }
-
-    AsyncFunction("torBootstrap") {
-      tor().bootstrap()
-    }
-
+    // Tor
+    Function("torInit") { notReady<Unit>() }
+    AsyncFunction("torBootstrap") { notReady<Unit>() }
     AsyncFunction("torRequest") {
-      method: String, url: String, body: ByteArray?, authToken: String? ->
-      val r = tor().request(method, url, body, authToken)
-      mapOf(
-        "status" to r.status.toInt(),
-        "body" to r.body,
-        "headers" to r.headers.map { mapOf("name" to it.name, "value" to it.value) },
-      )
+      _: String, _: String, _: ByteArray?, _: String? -> notReady<Map<String, Any>>()
     }
-
-    AsyncFunction("torShutdown") {
-      tor().shutdown()
-    }
+    AsyncFunction("torShutdown") { notReady<Unit>() }
   }
 }

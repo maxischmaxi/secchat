@@ -15,10 +15,11 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
-  # Swift-Sources + UniFFI-generierte Datei aus Sources/.
-  # SecchatCore.xcframework wird von build.sh erzeugt (enthaelt
-  # libsecchat_core.a fuer Device + Simulator).
-  s.source_files       = '*.swift', 'Sources/*.swift', 'Sources/*.h'
-  s.vendored_frameworks = 'SecchatCore.xcframework'
-  s.preserve_paths     = 'Sources/*.modulemap'
+  # Nur die Wrapper-Sources im Phase-3b-Zustand. Die UniFFI-generierten
+  # Swift-Dateien + SecchatCore.xcframework werden in Phase 3c hier
+  # eingezogen, sobald build.sh durchgelaufen ist. Dann:
+  #   s.source_files        += 'Sources/*.{swift,h}'
+  #   s.vendored_frameworks = 'SecchatCore.xcframework'
+  #   s.preserve_paths      = 'Sources/*.modulemap'
+  s.source_files = '*.swift'
 end
