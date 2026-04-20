@@ -30,21 +30,32 @@ function pickIndices(total: number, count: number): number[] {
   return [...idxs].sort((a, b) => a - b);
 }
 
+// Robust normalisieren — deckt Unicode-Normalisierung (NFKC), evtl.
+// eingeschleuste Non-Breaking-Spaces und Grossbuchstaben ab.
+const normalize = (s: string): string =>
+  s.normalize('NFKC').trim().toLowerCase();
+
 export function SeedConfirmScreen({ route }: Props) {
   const { mnemonic } = route.params;
-  const words = mnemonic.split(' ');
+  const words = useMemo(
+    () => mnemonic.split(/\s+/).filter(Boolean).map(normalize),
+    [mnemonic],
+  );
   const [prompts] = useState(() => pickIndices(words.length, 3));
   const [inputs, setInputs] = useState<Record<number, string>>({});
   const [loading, setLoading] = useState(false);
   const setSession = useAuth((s) => s.setSession);
 
-  const allMatch = useMemo(
-    () =>
-      prompts.every(
-        (i) => (inputs[i] ?? '').trim().toLowerCase() === words[i],
-      ),
-    [prompts, inputs, words],
-  );
+  const fieldOk = useMemo(() => {
+    const out: Record<number, boolean> = {};
+    for (const i of prompts) {
+      const value = inputs[i] ?? '';
+      out[i] = value.length > 0 && normalize(value) === words[i];
+    }
+    return out;
+  }, [prompts, inputs, words]);
+
+  const allMatch = prompts.every((i) => fieldOk[i]);
 
   async function finish() {
     if (!allMatch || loading) return;
@@ -82,24 +93,47 @@ export function SeedConfirmScreen({ route }: Props) {
         >
           <Text style={styles.title}>Bitte bestätigen</Text>
           <Text style={styles.subtitle}>
-            Trag die folgenden Wörter aus deinem Seed ein, um zu zeigen dass du
-            ihn gesichert hast.
+            Trag die folgenden Wörter aus deinem Seed ein, um zu zeigen dass
+            du ihn gesichert hast. Das Feld wird grün, sobald das Wort
+            übereinstimmt.
           </Text>
 
-          {prompts.map((i) => (
-            <View key={i} style={styles.row}>
-              <Text style={styles.idx}>Wort {i + 1}</Text>
-              <TextInput
-                style={styles.input}
-                autoCapitalize="none"
-                autoCorrect={false}
-                placeholder="…"
-                placeholderTextColor="#444"
-                value={inputs[i] ?? ''}
-                onChangeText={(t) => setInputs((p) => ({ ...p, [i]: t }))}
-              />
-            </View>
-          ))}
+          {prompts.map((i) => {
+            const value = inputs[i] ?? '';
+            const hasInput = value.trim().length > 0;
+            const ok = fieldOk[i];
+            return (
+              <View key={i} style={styles.row}>
+                <Text style={styles.idx}>Wort {i + 1}</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    hasInput && (ok ? styles.inputOk : styles.inputBad),
+                  ]}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  spellCheck={false}
+                  textContentType="none"
+                  importantForAutofill="no"
+                  keyboardType="visible-password"
+                  placeholder="…"
+                  placeholderTextColor="#444"
+                  value={value}
+                  onChangeText={(t) =>
+                    setInputs((p) => ({ ...p, [i]: t }))
+                  }
+                />
+                {hasInput ? (
+                  <Text style={ok ? styles.markOk : styles.markBad}>
+                    {ok ? '✓' : '✗'}
+                  </Text>
+                ) : (
+                  <View style={styles.markSpacer} />
+                )}
+              </View>
+            );
+          })}
 
           <Pressable
             style={[
@@ -133,7 +167,14 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     fontFamily: 'monospace',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
+  inputOk: { borderColor: '#3dfd8b' },
+  inputBad: { borderColor: '#ff5d5d' },
+  markOk: { color: '#3dfd8b', fontSize: 20, marginLeft: 10, width: 20, textAlign: 'center' },
+  markBad: { color: '#ff5d5d', fontSize: 20, marginLeft: 10, width: 20, textAlign: 'center' },
+  markSpacer: { width: 30 },
   primary: {
     backgroundColor: '#3d8bfd',
     paddingVertical: 16,
