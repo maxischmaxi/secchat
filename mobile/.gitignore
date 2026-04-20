@@ -1,6 +1,14 @@
 node_modules/
 .expo/
 dist/
+web-build/
+
+# Expo Continuous Native Generation — native projects are regenerated
+# via `npx expo prebuild`, not committed. Add custom native code through
+# config plugins instead.
+ios/
+android/
+
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -10,11 +18,6 @@ yarn-error.*
 *.key
 *.mobileprovision
 *.orig.*
-web-build/
 .env
 .env.*
-ios/Pods/
-ios/build/
-android/build/
-android/app/build/
-android/.gradle/
+.DS_Store
