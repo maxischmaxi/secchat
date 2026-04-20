@@ -1,8 +1,10 @@
 import * as SecureStore from 'expo-secure-store';
 
-const KEY_SEED = 'secchat:seed';
-const KEY_HANDLE = 'secchat:handle';
-const KEY_SESSION_TOKEN = 'secchat:session_token';
+// SecureStore-Keys duerfen nur [a-zA-Z0-9._-] enthalten — Doppelpunkt
+// wirft "Invalid key". Darum Unterstrich statt Namespace-Doppelpunkt.
+const KEY_SEED = 'secchat_seed';
+const KEY_HANDLE = 'secchat_handle';
+const KEY_SESSION_TOKEN = 'secchat_session_token';
 
 /**
  * Legt den Recovery-Seed im Secure Enclave (iOS) / Android Keystore ab.
