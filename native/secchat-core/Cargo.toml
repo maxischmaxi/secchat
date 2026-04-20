@@ -1,0 +1,23 @@
+[package]
+name = "secchat-core"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+description = "Native Rust core for secchat: MLS (openmls) + embedded Tor (arti), exposed to React Native via UniFFI."
+
+[lib]
+crate-type = ["staticlib", "cdylib", "lib"]
+
+[dependencies]
+uniffi = { version = "0.28", features = ["tokio"] }
+thiserror = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync"] }
+hkdf = "0.12"
+sha2 = "0.10"
+
+# Phase 3b wires real MLS + Tor:
+#   openmls             = "0.6"
+#   openmls_rust_crypto = "0.3"
+#   arti-client         = { version = "0.28", features = ["tokio", "rustls"] }
+#   tor-rtcompat        = { version = "0.28", features = ["tokio", "rustls"] }
